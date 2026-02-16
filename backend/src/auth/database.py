@@ -175,3 +175,42 @@ class AuthDatabase:
         if self.client:
             self.client.close()
             print("🔒 MongoDB connection closed")
+
+    def save_history(self, email, history_item):
+        """Save summary history to database"""
+        try:
+            if self.db is None:
+                return False
+            
+            # Add timestamp if not present
+            if "timestamp" not in history_item:
+                history_item["timestamp"] = datetime.now()
+            
+            self.db["history"].insert_one({
+                "email": email,
+                **history_item
+            })
+            return True
+        except Exception as e:
+            print(f"❌ Failed to save history: {e}")
+            return False
+
+    def get_user_history(self, email):
+        """Get user history from database"""
+        try:
+            if self.db is None:
+                return []
+            
+            cursor = self.db["history"].find(
+                {"email": email}
+            ).sort("timestamp", -1)
+            
+            history = []
+            for item in cursor:
+                item["_id"] = str(item["_id"])  # Convert ObjectId to string
+                history.append(item)
+            
+            return history
+        except Exception as e:
+            print(f"❌ Failed to get history: {e}")
+            return []
